@@ -1,0 +1,54 @@
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import sum, avg, count, col
+
+# Create Spark session
+spark = SparkSession.builder \
+    .appName("Big Data Analysis") \
+    .getOrCreate()
+
+# Load dataset
+data = spark.read.csv("sales_data.csv", header=True, inferSchema=True)
+
+# Show schema
+data.printSchema()
+
+# Show first 5 rows
+data.show(5)
+
+# -------------------------------
+# 🔍 DATA ANALYSIS
+# -------------------------------
+
+# 1. Total Sales
+data = data.withColumn("total_sales", col("price") * col("quantity"))
+
+total_sales = data.select(sum("total_sales")).collect()[0][0]
+print("Total Sales:", total_sales)
+
+# 2. Sales by Category
+sales_by_category = data.groupBy("category") \
+    .agg(sum("total_sales").alias("total_sales"))
+
+sales_by_category.show()
+
+# 3. Top Selling Products
+top_products = data.groupBy("product") \
+    .agg(sum("quantity").alias("total_quantity")) \
+    .orderBy(col("total_quantity").desc())
+
+top_products.show()
+
+# 4. Average Sales per Region
+avg_sales_region = data.groupBy("region") \
+    .agg(avg("total_sales").alias("avg_sales"))
+
+avg_sales_region.show()
+
+# 5. Count of Orders per Region
+orders_count = data.groupBy("region") \
+    .agg(count("order_id").alias("total_orders"))
+
+orders_count.show()
+
+# Stop Spark session
+spark.stop()
